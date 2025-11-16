@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Depends, Response, Request
+from fastapi import FastAPI, Depends, Response, Request, HTTPException, status
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from tasks.routs import router as task_routs
 from users.routs import router as user_routs
@@ -106,3 +109,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    error_response = {
+        "error": True,
+        "status_code": exc.status_code,
+        "detail": str(exc.detail)
+    }
+
+    return JSONResponse(status_code=exc.status_code, content=error_response)
+
+
+@app.exception_handler(RequestValidationError)
+async def http_validation_exception_handler(request, exc):
+    error_response = {
+        "error": True,
+        "status_code": status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "detail": "There was a problem with your form request",
+        "content": exc.errors()
+    }
+
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content=error_response)

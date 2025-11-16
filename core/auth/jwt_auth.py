@@ -3,12 +3,12 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from users.models import UserModel, TokenModel, UserType
 from core.database import get_db
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from core.config import settings
 import jwt
 from jwt.exceptions import DecodeError, InvalidSignatureError
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def get_authenticated_user(
@@ -76,7 +76,7 @@ def get_authenticated_admin(user: UserModel = Depends(get_authenticated_user)):
 
 
 def generate_access_token(user_id: int, expires_in: int = 3600) -> str:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     payload = {
         "type": "access",
         "user_id": user_id,
@@ -87,7 +87,7 @@ def generate_access_token(user_id: int, expires_in: int = 3600) -> str:
 
 
 def generate_refresh_token(user_id: int, expires_in: int = 3600 * 24) -> str:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     payload = {
         "type": "refresh",
         "user_id": user_id,
