@@ -8,4 +8,8 @@ RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
 
 COPY ./core .
 
+<<<<<<< HEAD
 CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8000"]
+=======
+CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "80"]
+>>>>>>> eb9b29d (dockerfile.stage added)
