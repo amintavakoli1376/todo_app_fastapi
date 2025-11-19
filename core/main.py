@@ -184,6 +184,10 @@ async def initiate_task(background_tasks: BackgroundTasks):
     task_counter += 1
     return JSONResponse(content={"detail": "task is done"})
 
+@app.get("/is-ready", status_code=200)
+async def readiness():
+    return JSONResponse(content="ok")
+
 
 from core.celery_conf import add_number
 from celery.result import AsyncResult
