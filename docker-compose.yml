@@ -78,6 +78,46 @@ services:
     command: bash -c 'fastapi dev --host 0.0.0.0 --port 8000'
     volumes:
       - ./core:/usr/src/core
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: celery_worker
+    depends_on:
+      - db
+      - redis
+    environment:
+      SQLALCHEMY_DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
+      JWT_SECRET_KEY: )+=0=3eh&5^*tvw-p%$qtx%6d&hj@w=zs2$f(oltzy$#a07i8#
+      REDIS_URL: redis://redis:6379
+    command: bash -c 'celery -A core.celery_conf worker --loglevel=info'
+    volumes:
+      - ./core:/usr/src/core
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: celery_beat
+    depends_on:
+      - db
+      - redis
+    environment:
+      SQLALCHEMY_DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
+      JWT_SECRET_KEY: )+=0=3eh&5^*tvw-p%$qtx%6d&hj@w=zs2$f(oltzy$#a07i8#
+      REDIS_URL: redis://redis:6379
+    command: bash -c 'celery -A core.celery_conf beat --loglevel=info'
+    volumes:
+      - ./core:/usr/src/core
+
+  flower:
+    image: mher/flower:0.9.7
+    command: ['flower', '--broker=redis://redis:6379/3', '--port=5555']
+    ports:
+      - 5555:5555
+    depends_on:
+      - redis
       
 volumes:
   smtp4dev-data:
