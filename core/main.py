@@ -44,23 +44,23 @@ tags_metadata = [
 ]
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Application start up")
-    scheduler.add_job(my_task, IntervalTrigger(seconds=10), id="my_task", replace_existing=True)
-    scheduler.start()
-
-    yield
-
-    scheduler.shutdown()
-    print("Application shutdown")
-
-
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
 #     print("Application start up")
+#     scheduler.add_job(my_task, IntervalTrigger(seconds=10), id="my_task", replace_existing=True)
+#     scheduler.start()
+
 #     yield
+
+#     scheduler.shutdown()
 #     print("Application shutdown")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Application start up")
+    yield
+    print("Application shutdown")
 
 
 app = FastAPI(
