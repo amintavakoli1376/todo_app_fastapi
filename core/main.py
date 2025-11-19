@@ -9,7 +9,28 @@ from users.models import UserModel
 import time
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.jobstores.redis import RedisJobStore
+from apscheduler.triggers.interval import IntervalTrigger
+from core.config import settings
 
+import logging
+import time
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+jobstores = {
+    "default": RedisJobStore(jobs_key="apscheduler.jobs", run_times_key="apscheduler.run_times", host="redis", port=6379, db=1)
+}
+
+scheduler = AsyncIOScheduler(jobstores=jobstores)
+
+def my_task():
+    logging.info("task executed at %s", time.strftime('%Y-%m-%d %H:%M:%S'))
 
 tags_metadata = [
     {
@@ -26,8 +47,20 @@ tags_metadata = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Application start up")
+    scheduler.add_job(my_task, IntervalTrigger(seconds=10), id="my_task", replace_existing=True)
+    scheduler.start()
+
     yield
+
+    scheduler.shutdown()
     print("Application shutdown")
+
+
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     print("Application start up")
+#     yield
+#     print("Application shutdown")
 
 
 app = FastAPI(
@@ -131,3 +164,72 @@ async def http_validation_exception_handler(request, exc):
     }
 
     return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content=error_response)
+
+
+from fastapi import BackgroundTasks
+import random
+
+task_counter = 1
+
+def start_task(task_id):
+    print(f"doing the process: {task_id}")
+    time.sleep(random.randint(3, 10))
+    print(f"finish task: {task_id}")
+
+
+@app.get("/initiate-task", status_code=200)
+async def initiate_task(background_tasks: BackgroundTasks):
+    global task_counter
+    background_tasks.add_task(start_task, task_id = task_counter)
+    task_counter += 1
+    return JSONResponse(content={"detail": "task is done"})
+
+
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+from redis import asyncio as aioredis
+
+import httpx
+
+redis = aioredis.from_url(settings.REDIS_URL)
+cache_backend = RedisBackend(redis)
+FastAPICache.init(cache_backend, prefix="fastapi-cache")
+
+async def request_current_weather(latitude: float, longitude: float):
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "current": "temperature_2m,relative_humidity_2m"
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params)
+
+    if response.status_code == 200:
+        data = response.json()
+        current_weather = data.get("current", {})
+        return current_weather
+    else:
+        return None
+
+@app.get("/fetch-current-weather", status_code=200)
+@cache(expire=10)
+async def fetch_current_weather(latitude: float = 40.7128, longitude: float = -74.0060):
+    current_weather = await request_current_weather(latitude, longitude)
+    if current_weather:
+        return JSONResponse(content={"current_weather": current_weather})
+    else:
+        return JSONResponse(content={"detail": "Failed to fetch weather"}, status_code=500)
+
+from core.email_util import send_email
+
+@app.get("/test-send-mail", status_code=200)
+async def test_send_mail():
+    await send_email(
+        subject="Test email from fastapi",
+        recipients=["recipient@example.com"],
+        body="This is a test email sent using email util function"
+    )
+    return JSONResponse(content={"detail": "Email has been sent"})
