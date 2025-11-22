@@ -2,9 +2,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    SQLALCHEMY_DATABASE_URL: str
+    SQLALCHEMY_DATABASE_URL: str = "sqlite:///:memory:"
     JWT_SECRET_KEY: str = "test"
-    REDIS_URL: str
+    REDIS_URL: str = "redis://redis:6379"
     SENTRY_DSN: str = "https://0440ba3c5ae190d6c8d413f40af5d778@sentry.hamravesh.com/9385"
 
     MAIL_PASSWORD: str = ""
