@@ -13,9 +13,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler.triggers.interval import IntervalTrigger
 from core.config import settings
-
 import logging
 import time
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn = settings.SENTRY_DSN,
+    send_default_pii=True,
+)
 
 logging.basicConfig(
     level=logging.INFO,
