@@ -257,3 +257,9 @@ async def test_send_mail():
         body="This is a test email sent using email util function"
     )
     return JSONResponse(content={"detail": "Email has been sent"})
+
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
+    return division_by_zero
