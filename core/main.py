@@ -247,6 +247,8 @@ async def fetch_current_weather(latitude: float = 40.7128, longitude: float = -7
     else:
         return JSONResponse(content={"detail": "Failed to fetch weather"}, status_code=500)
 
+
+
 from core.email_util import send_email
 
 @app.get("/test-send-mail", status_code=200)
